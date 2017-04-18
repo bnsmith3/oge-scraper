@@ -36,7 +36,7 @@ def grab_and_parse_rows(page, prefix = 'https://extapps2.oge.gov'):
     Append the given prefix to all of the parsed link URLs
     Return a list of tuples that contain the following for each URL:
         the URL with the given prefix appended
-        the person's name to whom the form belongs
+        the person's name to whom the form belongs (first, middle, and last name and suffix)
         the year
         the type of form
     """
@@ -56,18 +56,44 @@ def grab_and_parse_rows(page, prefix = 'https://extapps2.oge.gov'):
         form_type = (form_type.split('.')[0]).strip()
         
         # remove the extraneous punctuation from the name
-        name = parse_name(name)
+        first_name, middle_name, last_name, suffix = parse_name(name)
         
-        links.append(('{}{}'.format(prefix, link), name, year, form_type))
+        links.append(('{}{}'.format(prefix, link), first_name, middle_name, last_name, suffix, year, form_type))
     
     return links
     
 def parse_name(name):
     """
+    Takes in a name (e.g., Obama, Barack H.) and spits out the first name, 
+    middle initial, last name and suffix
+    Those values are all empty if the given name doesn't have at least two names
     """
-    name = name.strip()
+    name_parts = [a.strip() for a in name.split(",")]
     
-    return name
+    first_name = ''
+    middle_initial = ''
+    last_name = ''
+    suffix = ''
+    
+    if len(name_parts) > 1:    
+        if " " in name_parts[-1]:
+            first_name, middle_initial = name_parts[-1].split(" ")
+        else:
+            first_name = name_parts[-1]
+            
+        last_name = name_parts[0]
+        
+        if len(name_parts) > 2:        
+            suffix = name_parts[1]
+    
+    return first_name, middle_initial, last_name, suffix
+
+def add_to_db(conn, links):
+    """
+    """
+    success = False
+    
+    return success
 
 
 if __name__ == "__main__":
