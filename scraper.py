@@ -56,32 +56,35 @@ def grab_file_info(page, prefix = 'https://extapps2.oge.gov'):
     # and the type of form
     for entry in page_entries:
         link = entry.attrs['href']
-        print(link)
         
+        form_type = entry.contents[0].contents[0].strip()
+        year = ''
+
         # treat links differently depending on if they contain the year
         if re.search('\d{4}', link.split('/')[-1]):
-            name, year, form_type = re.search('(.*)(\d{4})(.*)', link.split('/')[-1]).groups()
+            name, year, _ = re.search('(.*)(\d{4})(.*)', link.split('/')[-1]).groups()
             year = year.strip()       
         else:
             parts = re.split('\s+', link.split('/')[-1])
             name = " ".join(parts[0:-1])
-            year = 'unknown'
             
-        form_type = entry.contents.strip()
+            # try to get the year from the form_type
+            contents_search = re.search('(.*)(\d{4})(.*)', form_type)
+            if contents_search:
+                _, year, _ = contents_search.groups()
             
-        # remove the extraneous punctuation from the name
+        # clean up the name
         first_name, middle_name, last_name, suffix = parse_name(name)
         
         links.append(('{}{}'.format(prefix, link), first_name, middle_name, last_name, suffix, year, form_type))
     
     return links
     
-def parse_name(name, delim=","):
+def parse_name(name):
     """
-    Takes in a name (e.g., Obama, Barack H.) and a delimiter and spits out the 
-    first name, middle name, last name and suffix
+    Takes in a name (e.g., Obama, Barack H.) and spits out the first name, 
+    middle name, last name and suffix
     Those values are all empty if the given name doesn't have at least two parts
-    designated by the delimiter
     
     Examples of names:
         Biden, Jr., Joseph R.
@@ -91,6 +94,12 @@ def parse_name(name, delim=","):
         Daniel-Yohannes-
         Melvin-L-Watt-07.23.
     """
+    
+    # figure out the delimiter
+    if "-" in name:
+        delim = "-"
+    else:
+        delim = ","
     
     # only add parts with a letter and that aren't blank
     # and remove punctuation
